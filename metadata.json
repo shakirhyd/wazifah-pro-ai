@@ -1,0 +1,6 @@
+{
+  "name": "Wazifah Tracker — Tasbeeh Counter",
+  "description": "Offline tasbeeh and wazifah counter with automatic timing and session reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
