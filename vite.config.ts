@@ -5,6 +5,9 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   base: process.env.BASE_URL || './',
+  build: {
+    outDir: 'dist/client',
+  },
   resolve: {
     tsconfigPaths: true,
   },
