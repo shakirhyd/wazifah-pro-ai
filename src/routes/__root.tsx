@@ -88,7 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Wazifah Tracker — Tasbeeh Counter" },
       { property: "og:description", content: "Count tasbeehs with one tap and review timed session reports." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/pwa-512x512.png" },
+      { property: "og:image", content: "pwa-512x512.png" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -96,10 +96,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "icon", href: "/pwa-192x192.png", type: "image/png", sizes: "192x192" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "manifest.json" },
+      { rel: "icon", href: "favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "pwa-192x192.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "apple-touch-icon.png", sizes: "180x180" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -128,7 +128,7 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                  navigator.serviceWorker.register('sw.js').then(function(reg) {
                     console.log('SW registered!', reg);
                   }).catch(function(err) {
                     console.log('SW reg failed:', err);

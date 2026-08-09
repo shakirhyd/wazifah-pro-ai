@@ -23,21 +23,38 @@ if (fs.existsSync(assetsDir)) {
   cssFile = files.find(f => f.startsWith('styles-') && f.endsWith('.css')) || '';
 }
 
-const jsScript = jsFile ? `<script type="module" src="./assets/${jsFile}"></script>` : '';
-const cssLink = cssFile ? `<link rel="stylesheet" href="./assets/${cssFile}">` : '';
+const jsScript = jsFile ? `<script type="module" src="assets/${jsFile}"></script>` : '';
+const cssLink = cssFile ? `<link rel="stylesheet" href="assets/${cssFile}">` : '';
 
 const indexHtml = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        var path = window.location.pathname;
+        var base = '/';
+        if (path && path !== '/') {
+          var segments = path.split('/').filter(Boolean);
+          if (segments.length > 0 && !segments[0].includes('.')) {
+            if (window.location.hostname.endsWith('github.io') || segments[0] === 'wazifah-pro-ai') {
+              base = '/' + segments[0] + '/';
+            }
+          }
+        }
+        var baseEl = document.createElement('base');
+        baseEl.href = base;
+        document.head.appendChild(baseEl);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="WazifahBuddy" />
-    <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="pwa-192x192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.json" />
     <title>Wazifah Tracker — Tasbeeh Counter</title>
     ${cssLink}
   </head>
