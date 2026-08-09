@@ -1,36 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+const distDir = path.resolve(process.cwd(), 'dist');
 const clientDir = path.resolve(process.cwd(), 'dist/client');
-const assetsDir = path.join(clientDir, 'assets');
+const targetDir = fs.existsSync(clientDir) ? clientDir : distDir;
 
-if (!fs.existsSync(clientDir)) {
-  console.log('dist/client directory not found, skipping postbuild.');
+if (!fs.existsSync(targetDir)) {
+  console.log('Target build directory not found, skipping postbuild.');
   process.exit(0);
 }
 
 // 1. Create .nojekyll for GitHub Pages
-fs.writeFileSync(path.join(clientDir, '.nojekyll'), '');
-console.log('Created .nojekyll in dist/client');
+fs.writeFileSync(path.join(targetDir, '.nojekyll'), '');
+console.log('Created .nojekyll in target directory');
 
-// 2. Find entry JS and CSS files in dist/client/assets
-let jsFile = '';
-let cssFile = '';
+// 2. Process index.html
+const indexPath = path.join(targetDir, 'index.html');
+if (fs.existsSync(indexPath)) {
+  let html = fs.readFileSync(indexPath, 'utf-8');
 
-if (fs.existsSync(assetsDir)) {
-  const files = fs.readdirSync(assetsDir);
-  jsFile = files.find(f => f.startsWith('index-') && f.endsWith('.js')) || '';
-  cssFile = files.find(f => f.startsWith('styles-') && f.endsWith('.css')) || '';
-}
-
-const jsScript = jsFile ? `<script type="module" src="assets/${jsFile}"></script>` : '';
-const cssLink = cssFile ? `<link rel="stylesheet" href="assets/${cssFile}">` : '';
-
-const indexHtml = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <script>
+  // Inject base tag script if not present
+  if (!html.includes('var baseEl = document.createElement(\'base\')')) {
+    const baseScript = `<script>
       (function() {
         var path = window.location.pathname;
         var base = '/';
@@ -46,25 +37,26 @@ const indexHtml = `<!doctype html>
         baseEl.href = base;
         document.head.appendChild(baseEl);
       })();
-    </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="WazifahBuddy" />
-    <link rel="icon" type="image/png" sizes="192x192" href="pwa-192x192.png" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="manifest" href="manifest.json" />
-    <title>Wazifah Tracker — Tasbeeh Counter</title>
-    ${cssLink}
-  </head>
-  <body>
-    <div id="root"></div>
-    ${jsScript}
-  </body>
-</html>
-`;
+    </script>`;
+    html = html.replace('<head>', `<head>\n    ${baseScript}`);
+    fs.writeFileSync(indexPath, html, 'utf-8');
+  }
 
-fs.writeFileSync(path.join(clientDir, 'index.html'), indexHtml);
-fs.writeFileSync(path.join(clientDir, '404.html'), indexHtml);
-console.log('Successfully generated index.html and 404.html in dist/client');
+  // Generate 404.html for GitHub Pages single-page routing
+  fs.writeFileSync(path.join(targetDir, '404.html'), html, 'utf-8');
+  console.log('Successfully updated index.html and generated 404.html');
+}
+
+// 3. Copy public files to targetDir if needed
+const publicDir = path.resolve(process.cwd(), 'public');
+if (fs.existsSync(publicDir)) {
+  const publicFiles = fs.readdirSync(publicDir);
+  for (const file of publicFiles) {
+    const srcFile = path.join(publicDir, file);
+    const destFile = path.join(targetDir, file);
+    if (fs.statSync(srcFile).isFile() && !fs.existsSync(destFile)) {
+      fs.copyFileSync(srcFile, destFile);
+    }
+  }
+}
+
