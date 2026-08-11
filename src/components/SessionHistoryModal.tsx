@@ -115,14 +115,15 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                 className="p-3.5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 rounded-xl flex items-center justify-between gap-3 transition-colors text-xs"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-slate-100">{s.wazifahTitle}</h3>
-                    {s.arabicText && (
-                      <span className="font-serif text-amber-200 text-sm font-semibold">
-                        {s.arabicText}
-                      </span>
-                    )}
                   </div>
+
+                  {s.stepsSummary && (
+                    <p className="text-[11px] text-amber-300 font-medium">
+                      {s.stepsSummary}
+                    </p>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400 text-[11px]">
                     <span className="flex items-center gap-1 text-emerald-400 font-semibold">

@@ -1,12 +1,12 @@
-import { Wazifah, WazifahSession, UserSettings, DailySummary } from '../types/wazifah';
-import { PRESET_WAZIFAHS } from '../data/presetWazifahs';
+import { Dhikr, Wazifah, WazifahSession, UserSettings, DailySummary } from '../types/wazifah';
+import { PRESET_DHIKRS, PRESET_WAZIFAHS } from '../data/presetDhikrsAndWazifahs';
 
 const KEYS = {
-  CUSTOM_WAZIFAHS: 'wazifah_custom_list_v1',
-  SESSIONS_LOG: 'wazifah_sessions_log_v1',
-  USER_SETTINGS: 'wazifah_user_settings_v1',
-  ACTIVE_SESSION: 'wazifah_active_session_v1',
-  SELECTED_WAZIFAH_ID: 'wazifah_selected_id_v1',
+  CUSTOM_DHIKRS: 'wazifah_custom_dhikrs_v2',
+  CUSTOM_WAZIFAHS: 'wazifah_custom_wazifahs_v2',
+  SESSIONS_LOG: 'wazifah_sessions_log_v2',
+  USER_SETTINGS: 'wazifah_user_settings_v2',
+  SELECTED_WAZIFAH_ID: 'wazifah_selected_id_v2',
 };
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -22,6 +22,31 @@ export const DEFAULT_SETTINGS: UserSettings = {
   showTransliteration: true,
   showTranslation: true,
 };
+
+// --- Custom Dhikrs ---
+export function getCustomDhikrs(): Dhikr[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(KEYS.CUSTOM_DHIKRS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomDhikrs(dhikrs: Dhikr[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(KEYS.CUSTOM_DHIKRS, JSON.stringify(dhikrs));
+  } catch (e) {
+    console.error('Failed to save custom dhikrs', e);
+  }
+}
+
+export function getAllDhikrs(): Dhikr[] {
+  const custom = getCustomDhikrs();
+  return [...PRESET_DHIKRS, ...custom];
+}
 
 // --- Custom Wazifahs ---
 export function getCustomWazifahs(): Wazifah[] {
@@ -44,8 +69,32 @@ export function saveCustomWazifahs(wazifahs: Wazifah[]): void {
 }
 
 export function getAllWazifahs(): Wazifah[] {
-  const custom = getCustomWazifahs();
-  return [...PRESET_WAZIFAHS, ...custom];
+  const customWazifahs = getCustomWazifahs();
+
+  // Also build single-item Wazifahs for individual Dhikrs so user can recite any single Dhikr as a Wazifah
+  const allDhikrs = getAllDhikrs();
+  const singleDhikrWazifahs: Wazifah[] = allDhikrs.map(d => ({
+    id: `single_wazifah_${d.id}`,
+    title: d.title,
+    description: d.benefits || `Individual Dhikr recitation (${d.title})`,
+    category: d.category,
+    isCustom: d.isCustom,
+    steps: [
+      {
+        dhikrId: d.id,
+        dhikrTitle: d.title,
+        arabicText: d.arabicText,
+        transliteration: d.transliteration,
+        translation: d.translation,
+        targetCount: d.recommendedTarget,
+        benefits: d.benefits,
+        niyyah: d.niyyah,
+      },
+    ],
+  }));
+
+  // Combine: Preset Multi-Dhikr Wazifahs + Custom Multi-Dhikr Wazifahs + Single-Dhikr Wazifahs
+  return [...PRESET_WAZIFAHS, ...customWazifahs, ...singleDhikrWazifahs];
 }
 
 // --- User Settings ---

@@ -4,7 +4,7 @@ import { Header } from '../components/Header';
 import { NiyyahCard } from '../components/NiyyahCard';
 import { TasbeehCounter } from '../components/TasbeehCounter';
 import { WazifahSelectorModal } from '../components/WazifahSelectorModal';
-import { CustomWazifahModal } from '../components/CustomWazifahModal';
+import { DhikrAndWazifahBuilderModal } from '../components/DhikrAndWazifahBuilderModal';
 import { SessionHistoryModal } from '../components/SessionHistoryModal';
 import { AnalyticsModal } from '../components/AnalyticsModal';
 import { SettingsModal } from '../components/SettingsModal';
@@ -21,8 +21,6 @@ import {
   clearAllSessionsLog,
   getDailySummaries,
   getCurrentStreak,
-  saveCustomWazifahs,
-  getCustomWazifahs,
 } from '../utils/storage';
 
 export const Route = createFileRoute('/')({
@@ -32,17 +30,18 @@ export const Route = createFileRoute('/')({
 function HomeComponent() {
   const [wazifahs, setWazifahs] = useState<Wazifah[]>([]);
   const [selectedWazifah, setSelectedWazifah] = useState<Wazifah | null>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [settings, setSettings] = useState<UserSettings>(getUserSettings());
   const [sessions, setSessions] = useState<WazifahSession[]>([]);
 
   // Modals state
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Load state on mount
+  // Load data on mount / update
   const reloadData = useCallback(() => {
     const all = getAllWazifahs();
     setWazifahs(all);
@@ -50,6 +49,7 @@ function HomeComponent() {
     const selId = getSelectedWazifahId();
     const found = all.find(w => w.id === selId) || all[0];
     setSelectedWazifah(found);
+    setActiveStepIndex(0);
 
     setSettings(getUserSettings());
     setSessions(getSessionsLog());
@@ -62,6 +62,7 @@ function HomeComponent() {
   // Handle selecting a Wazifah
   const handleSelectWazifah = (wazifah: Wazifah) => {
     setSelectedWazifah(wazifah);
+    setActiveStepIndex(0);
     saveSelectedWazifahId(wazifah.id);
   };
 
@@ -83,16 +84,11 @@ function HomeComponent() {
     setSessions([]);
   };
 
-  // Handle saving custom wazifah
-  const handleSaveCustomWazifah = (newWazifah: Wazifah) => {
-    const currentCustom = getCustomWazifahs();
-    const updated = [newWazifah, ...currentCustom];
-    saveCustomWazifahs(updated);
-
-    // Refresh state and select the new custom wazifah
-    const all = getAllWazifahs();
-    setWazifahs(all);
+  // Handle creation of new combined Wazifah or Dhikr
+  const handleWazifahCreated = (newWazifah: Wazifah) => {
+    reloadData();
     setSelectedWazifah(newWazifah);
+    setActiveStepIndex(0);
     saveSelectedWazifahId(newWazifah.id);
   };
 
@@ -113,6 +109,7 @@ function HomeComponent() {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onOpenSelector={() => setIsSelectorOpen(true)}
+        onOpenBuilder={() => setIsBuilderOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -125,12 +122,16 @@ function HomeComponent() {
             {/* Top Niyyah / Info Card */}
             <NiyyahCard
               wazifah={selectedWazifah}
+              activeStepIndex={activeStepIndex}
+              onSelectStep={idx => setActiveStepIndex(idx)}
               onOpenSelector={() => setIsSelectorOpen(true)}
             />
 
             {/* Central Tasbeeh Counter */}
             <TasbeehCounter
               wazifah={selectedWazifah}
+              activeStepIndex={activeStepIndex}
+              onSelectStep={idx => setActiveStepIndex(idx)}
               settings={settings}
               onSaveSession={handleSaveSession}
             />
@@ -139,7 +140,7 @@ function HomeComponent() {
 
         {/* Footer info */}
         <footer className="text-center text-[11px] text-slate-500 py-2 border-t border-slate-800/60">
-          Wazifah Tracker PRO • Offline Tasbeeh & Timed Session Reports
+          Wazifah Tracker PRO • Combine Dhikrs & Track Timed Routines
         </footer>
       </main>
 
@@ -151,14 +152,14 @@ function HomeComponent() {
           wazifahs={wazifahs}
           selectedWazifahId={selectedWazifah.id}
           onSelect={handleSelectWazifah}
-          onOpenCreateCustom={() => setIsCustomOpen(true)}
+          onOpenCreateCustom={() => setIsBuilderOpen(true)}
         />
       )}
 
-      <CustomWazifahModal
-        isOpen={isCustomOpen}
-        onClose={() => setIsCustomOpen(false)}
-        onSave={handleSaveCustomWazifah}
+      <DhikrAndWazifahBuilderModal
+        isOpen={isBuilderOpen}
+        onClose={() => setIsBuilderOpen(false)}
+        onWazifahCreated={handleWazifahCreated}
       />
 
       <SessionHistoryModal

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, History, BarChart3, Settings, BookOpen, Volume2, VolumeX } from 'lucide-react';
+import { Flame, History, BarChart3, Settings, BookOpen, Volume2, VolumeX, Plus } from 'lucide-react';
 import { UserSettings } from '../types/wazifah';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   settings: UserSettings;
   onUpdateSettings: (newSettings: UserSettings) => void;
   onOpenSelector: () => void;
+  onOpenBuilder: () => void;
   onOpenHistory: () => void;
   onOpenAnalytics: () => void;
   onOpenSettings: () => void;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   settings,
   onUpdateSettings,
   onOpenSelector,
+  onOpenBuilder,
   onOpenHistory,
   onOpenAnalytics,
   onOpenSettings,
@@ -40,20 +42,30 @@ export const Header: React.FC<HeaderProps> = ({
                 PRO
               </span>
             </h1>
-            <p className="text-xs text-slate-400 hidden sm:block">Offline Tasbeeh & Timed Dhikr</p>
+            <p className="text-xs text-slate-400 hidden sm:block">Combine Dhikrs & Track Wazifahs</p>
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Streak Badge */}
           <div
             title="Active Daily Streak"
-            className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full text-xs font-semibold"
+            className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-1 rounded-full text-xs font-semibold"
           >
             <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 animate-pulse" />
             <span>{currentStreak}d</span>
           </div>
+
+          {/* Quick Builder Button */}
+          <button
+            onClick={onOpenBuilder}
+            title="Create Dhikr / Combine Wazifah"
+            className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors text-xs font-bold flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden md:inline">Builder</span>
+          </button>
 
           {/* Quick Sound Toggle */}
           <button
