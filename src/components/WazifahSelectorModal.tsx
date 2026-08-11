@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Wazifah } from '../types/wazifah';
-import { Search, Plus, Check, X, BookOpen, Layers } from 'lucide-react';
+import { Search, Plus, Check, X, BookOpen, Layers, Trash2 } from 'lucide-react';
 
 interface WazifahSelectorModalProps {
   isOpen: boolean;
@@ -8,6 +8,7 @@ interface WazifahSelectorModalProps {
   wazifahs: Wazifah[];
   selectedWazifahId: string;
   onSelect: (wazifah: Wazifah) => void;
+  onDeleteWazifah?: (wazifahId: string) => void;
   onOpenCreateCustom: () => void;
 }
 
@@ -17,6 +18,7 @@ export const WazifahSelectorModal: React.FC<WazifahSelectorModalProps> = ({
   wazifahs,
   selectedWazifahId,
   onSelect,
+  onDeleteWazifah,
   onOpenCreateCustom,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -173,11 +175,29 @@ export const WazifahSelectorModal: React.FC<WazifahSelectorModalProps> = ({
                     )}
                   </div>
 
-                  {isSelected && (
-                    <div className="p-1 rounded-full bg-amber-500 text-slate-950 shrink-0">
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isSelected && (
+                      <div className="p-1 rounded-full bg-amber-500 text-slate-950">
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </div>
+                    )}
+
+                    {onDeleteWazifah && (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete "${w.title}"?`)) {
+                            onDeleteWazifah(w.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        title="Delete this Wazifah/Dhikr"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })

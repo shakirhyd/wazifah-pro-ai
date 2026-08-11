@@ -21,6 +21,7 @@ import {
   clearAllSessionsLog,
   getDailySummaries,
   getCurrentStreak,
+  deleteWazifah,
 } from '../utils/storage';
 
 export const Route = createFileRoute('/')({
@@ -92,6 +93,12 @@ function HomeComponent() {
     saveSelectedWazifahId(newWazifah.id);
   };
 
+  // Handle deleting a Wazifah
+  const handleDeleteWazifah = (wazifahId: string) => {
+    deleteWazifah(wazifahId);
+    reloadData();
+  };
+
   // Handle settings update
   const handleUpdateSettings = (newSettings: UserSettings) => {
     setSettings(newSettings);
@@ -133,6 +140,7 @@ function HomeComponent() {
               activeStepIndex={activeStepIndex}
               onSelectStep={idx => setActiveStepIndex(idx)}
               settings={settings}
+              onUpdateSettings={handleUpdateSettings}
               onSaveSession={handleSaveSession}
             />
           </>
@@ -152,6 +160,7 @@ function HomeComponent() {
           wazifahs={wazifahs}
           selectedWazifahId={selectedWazifah.id}
           onSelect={handleSelectWazifah}
+          onDeleteWazifah={handleDeleteWazifah}
           onOpenCreateCustom={() => setIsBuilderOpen(true)}
         />
       )}

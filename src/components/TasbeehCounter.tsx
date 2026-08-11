@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Wazifah, UserSettings, WazifahSession } from '../types/wazifah';
+import { Wazifah, UserSettings, WazifahSession, DhikrStepDetail } from '../types/wazifah';
 import { playBeadSound, playCompletionChime, triggerVibration } from '../utils/audio';
-import { RotateCcw, Undo2, CheckCircle2, Play, Pause, Plus, RefreshCw, ArrowRight, Layers } from 'lucide-react';
+import { RotateCcw, Undo2, CheckCircle2, Play, Pause, Plus, RefreshCw, ArrowRight } from 'lucide-react';
 
 interface TasbeehCounterProps {
   wazifah: Wazifah;
   activeStepIndex: number;
   onSelectStep: (index: number) => void;
   settings: UserSettings;
+  onUpdateSettings?: (settings: UserSettings) => void;
   onSaveSession: (session: WazifahSession) => void;
 }
 
@@ -17,6 +18,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   activeStepIndex,
   onSelectStep,
   settings,
+  onUpdateSettings,
   onSaveSession,
 }) => {
   const steps = wazifah.steps && wazifah.steps.length > 0 ? wazifah.steps : [];
@@ -27,15 +29,15 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
   const [count, setCount] = useState(0);
   const [stepTarget, setStepTarget] = useState(currentStep.targetCount || 33);
-  const [lap, setLap] = useState(1);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [showStepCompletionModal, setShowStepCompletionModal] = useState(false);
   const [showFullWazifahCompletionModal, setShowFullWazifahCompletionModal] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
-  // Completed counts history per step in current session
+  // Completed counts history and duration per step in current session
   const [stepCountsCompleted, setStepCountsCompleted] = useState<Record<number, number>>({});
+  const [stepDurations, setStepDurations] = useState<Record<number, number>>({});
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -48,20 +50,24 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   // Reset entire counter when switching wazifahs
   useEffect(() => {
     setCount(0);
-    setLap(1);
     setTimerSeconds(0);
     setIsRunning(false);
     setShowStepCompletionModal(false);
     setShowFullWazifahCompletionModal(false);
     setSessionStartTime(null);
     setStepCountsCompleted({});
+    setStepDurations({});
   }, [wazifah.id]);
 
-  // Timer ticker
+  // Timer ticker - increments overall timer & per-step duration
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
         setTimerSeconds(prev => prev + 1);
+        setStepDurations(prev => ({
+          ...prev,
+          [activeStepIndex]: (prev[activeStepIndex] || 0) + 1,
+        }));
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -69,7 +75,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning]);
+  }, [isRunning, activeStepIndex]);
 
   // Handle Increment
   const handleIncrement = useCallback((amount: number = 1) => {
@@ -99,6 +105,9 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
       // Check step target completion
       if (newCount >= stepTarget && prev < stepTarget) {
+        // Pause timer immediately when step/wazifah completion box appears
+        setIsRunning(false);
+
         if (settings.soundEnabled) {
           playCompletionChime(settings.soundVolume);
         }
@@ -135,6 +144,14 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     if (activeStepIndex < steps.length - 1) {
       onSelectStep(activeStepIndex + 1);
     }
+    // Resume timer when back on counter screen
+    setIsRunning(true);
+  };
+
+  const handleKeepCountingStep = () => {
+    setShowStepCompletionModal(false);
+    // Resume timer when back on counter screen
+    setIsRunning(true);
   };
 
   // Handle Undo
@@ -161,20 +178,32 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     setShowFullWazifahCompletionModal(false);
     setSessionStartTime(null);
     setStepCountsCompleted({});
+    setStepDurations({});
     onSelectStep(0);
   };
 
-  // Handle Next Round (Lap) for full Wazifah
-  const handleNextLap = () => {
-    setLap(prev => prev + 1);
+  // Handle Repeat Routine
+  const handleRepeatRoutine = () => {
     setCount(0);
     setShowStepCompletionModal(false);
     setShowFullWazifahCompletionModal(false);
     onSelectStep(0);
+    setIsRunning(true);
   };
 
   // Calculate total counts across all steps in current session
   const totalCountAcrossAllSteps = Object.values(stepCountsCompleted).reduce((a, b) => a + b, 0);
+
+  // Toggle speed unit
+  const speedUnit = settings.speedUnit || 'cpm';
+  const toggleSpeedUnit = () => {
+    if (onUpdateSettings) {
+      onUpdateSettings({
+        ...settings,
+        speedUnit: speedUnit === 'cpm' ? 'sec_per_count' : 'cpm',
+      });
+    }
+  };
 
   // Save session to history
   const handleCompleteAndSave = () => {
@@ -186,10 +215,19 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     const duration = Math.max(1, timerSeconds);
     const speed = Math.round((finalCount / duration) * 60);
 
-    // Build steps summary string
-    const summaryParts = steps.map((s, idx) => {
+    // Build steps summary string & dhikr breakdown details
+    const summaryParts: string[] = [];
+    const dhikrDetails: DhikrStepDetail[] = steps.map((s, idx) => {
       const stepCount = stepCountsCompleted[idx] || (idx === activeStepIndex ? count : 0);
-      return `${s.dhikrTitle} (${stepCount}/${s.targetCount})`;
+      const stepTime = stepDurations[idx] || 0;
+      summaryParts.push(`${s.dhikrTitle} (${stepCount}/${s.targetCount})`);
+      return {
+        dhikrId: s.dhikrId,
+        dhikrTitle: s.dhikrTitle,
+        count: stepCount,
+        targetCount: s.targetCount,
+        durationSeconds: stepTime,
+      };
     });
 
     const session: WazifahSession = {
@@ -203,19 +241,20 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
       startedAt,
       completedAt,
       speedCountPerMin: speed,
+      dhikrDetails,
     };
 
     onSaveSession(session);
 
     // Reset counter
     setCount(0);
-    setLap(1);
     setTimerSeconds(0);
     setIsRunning(false);
     setShowStepCompletionModal(false);
     setShowFullWazifahCompletionModal(false);
     setSessionStartTime(null);
     setStepCountsCompleted({});
+    setStepDurations({});
     onSelectStep(0);
   };
 
@@ -232,7 +271,9 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
   // Progress percent for current step
   const progressPercent = Math.min(100, Math.round((count / stepTarget) * 100));
-  const countsPerMin = timerSeconds > 0 ? Math.round((totalCountAcrossAllSteps || count) / timerSeconds * 60) : 0;
+  const totalCount = totalCountAcrossAllSteps || count;
+  const countsPerMin = timerSeconds > 0 ? Math.round((totalCount / timerSeconds) * 60) : 0;
+  const secPerCount = totalCount > 0 ? (timerSeconds / totalCount).toFixed(1) : '0.0';
 
   // SVG Progress Ring calculations
   const size = 260;
@@ -243,7 +284,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5 py-2 select-none">
-      {/* Target & Lap Header Status */}
+      {/* Target & Timer Header Status Bar */}
       <div className="w-full flex items-center justify-between px-4 py-2 bg-slate-800/40 rounded-xl border border-slate-700/40 text-xs">
         <div className="flex items-center gap-2">
           <span className="text-slate-400">Target:</span>
@@ -257,13 +298,6 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
               className="w-14 bg-slate-900/80 text-amber-300 text-center rounded border border-slate-700 px-1 py-0.5 font-mono text-xs focus:outline-none focus:border-amber-400"
             />
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-            <Layers className="w-3 h-3" />
-            <span>Round {lap}</span>
-          </span>
         </div>
 
         <div className="flex items-center gap-1 text-slate-300 font-mono">
@@ -338,11 +372,27 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
       {/* Speed & Total Session Counts bar */}
       <div className="flex items-center justify-around w-full px-4 text-xs text-slate-400 bg-slate-800/30 py-2 rounded-xl border border-slate-700/30">
-        <div>
+        <button
+          onClick={toggleSpeedUnit}
+          className="flex items-center gap-1 hover:text-amber-300 transition-colors cursor-pointer group"
+          title="Click to toggle between count/min and sec/count"
+        >
           <span className="text-slate-500">Speed: </span>
-          <span className="font-semibold text-slate-200">{countsPerMin}</span>
-          <span className="text-[10px] text-slate-500"> /min</span>
-        </div>
+          {speedUnit === 'sec_per_count' ? (
+            <>
+              <span className="font-semibold text-slate-200">{secPerCount}</span>
+              <span className="text-[10px] text-amber-400 font-medium"> s/count</span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-slate-200">{countsPerMin}</span>
+              <span className="text-[10px] text-amber-400 font-medium"> /min</span>
+            </>
+          )}
+          <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-400 group-hover:text-amber-300 px-1 py-0.2 rounded ml-1 font-mono">
+            ⇄ Toggle
+          </span>
+        </button>
         <div className="h-3 w-px bg-slate-700" />
         <div>
           <span className="text-slate-500">Total Session: </span>
@@ -392,7 +442,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
         </button>
       </div>
 
-      {/* Step Completion Modal */}
+      {/* Step Completion Modal (Timer is paused while shown) */}
       {showStepCompletionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
           <div className="max-w-sm w-full bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl shadow-amber-500/10">
@@ -405,6 +455,9 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
               <p className="text-sm text-amber-300 font-semibold mt-1">
                 Completed {currentStep.dhikrTitle} ({count}/{stepTarget})!
               </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                ⏱️ Step Time: {formatTime(stepDurations[activeStepIndex] || 0)}
+              </p>
               {steps[activeStepIndex + 1] && (
                 <p className="text-xs text-slate-300 mt-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
                   Next Step ({activeStepIndex + 2}/{steps.length}): <br />
@@ -415,7 +468,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
-                onClick={() => setShowStepCompletionModal(false)}
+                onClick={handleKeepCountingStep}
                 className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-colors"
               >
                 Keep Counting
@@ -433,7 +486,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
         </div>
       )}
 
-      {/* Full Wazifah Completion Modal */}
+      {/* Full Wazifah Completion Modal (Timer is paused while shown) */}
       {showFullWazifahCompletionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
           <div className="max-w-sm w-full bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl shadow-amber-500/10">
@@ -453,11 +506,11 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
-                onClick={handleNextLap}
+                onClick={handleRepeatRoutine}
                 className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/30 transition-colors flex items-center justify-center gap-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                <span>Next Round ({lap + 1})</span>
+                <span>Repeat Routine</span>
               </button>
 
               <button
@@ -474,3 +527,4 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     </div>
   );
 };
+

@@ -52,6 +52,22 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
 
+  // Per-Dhikr Aggregate Timing Metrics across all sessions
+  const dhikrTimingMap: Record<string, { title: string; totalCount: number; totalSeconds: number }> = {};
+  sessions.forEach(s => {
+    if (s.dhikrDetails && s.dhikrDetails.length > 0) {
+      s.dhikrDetails.forEach(d => {
+        if (!dhikrTimingMap[d.dhikrTitle]) {
+          dhikrTimingMap[d.dhikrTitle] = { title: d.dhikrTitle, totalCount: 0, totalSeconds: 0 };
+        }
+        dhikrTimingMap[d.dhikrTitle].totalCount += d.count;
+        dhikrTimingMap[d.dhikrTitle].totalSeconds += d.durationSeconds;
+      });
+    }
+  });
+
+  const dhikrTimingList = Object.values(dhikrTimingMap).sort((a, b) => b.totalSeconds - a.totalSeconds);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
       <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
@@ -142,7 +158,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
           {/* Top Practiced Wazifahs */}
           {topWazifahs.length > 0 && (
             <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 space-y-2 text-xs">
-              <h3 className="font-bold text-slate-200">Top Practiced Dhikrs</h3>
+              <h3 className="font-bold text-slate-200">Top Practiced Routines</h3>
               <div className="space-y-1.5 pt-1">
                 {topWazifahs.map(([title, count], idx) => (
                   <div key={title} className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800">
@@ -155,6 +171,38 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                     <span className="font-bold text-amber-300 font-mono">{count} counts</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Time Spent per Dhikr Breakdown */}
+          {dhikrTimingList.length > 0 && (
+            <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+              <h3 className="font-bold text-slate-200">Time Spent per Dhikr</h3>
+              <div className="space-y-1.5 pt-1">
+                {dhikrTimingList.map(item => {
+                  const secPerCount = item.totalCount > 0 && item.totalSeconds > 0
+                    ? (item.totalSeconds / item.totalCount).toFixed(1)
+                    : null;
+                  const mins = Math.floor(item.totalSeconds / 60);
+                  const secs = item.totalSeconds % 60;
+                  const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+                  return (
+                    <div key={item.title} className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+                      <div>
+                        <div className="font-semibold text-slate-200">{item.title}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{item.totalCount} total counts</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-amber-300 font-mono">⏱️ {timeStr}</div>
+                        {secPerCount && (
+                          <div className="text-[10px] text-emerald-400 font-mono">{secPerCount} s/count</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

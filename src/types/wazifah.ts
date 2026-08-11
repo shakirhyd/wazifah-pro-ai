@@ -34,6 +34,14 @@ export interface Wazifah {
   isCustom?: boolean;
 }
 
+export interface DhikrStepDetail {
+  dhikrId?: string;
+  dhikrTitle: string;
+  count: number;
+  targetCount: number;
+  durationSeconds: number;
+}
+
 export interface WazifahSession {
   id: string;
   wazifahId: string;
@@ -45,6 +53,7 @@ export interface WazifahSession {
   startedAt: string; // ISO date string
   completedAt: string; // ISO date string
   speedCountPerMin: number;
+  dhikrDetails?: DhikrStepDetail[];
 }
 
 export interface UserSettings {
@@ -54,7 +63,7 @@ export interface UserSettings {
   soundType: 'bead' | 'click' | 'bell';
   theme: 'dark' | 'emerald' | 'amber';
   dailyTargetCount: number;
-  autoLap: boolean;
+  speedUnit: 'cpm' | 'sec_per_count';
   tapAnywhere: boolean;
   showArabic: boolean;
   showTransliteration: boolean;

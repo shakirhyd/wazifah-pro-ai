@@ -119,11 +119,35 @@ export const SessionHistoryModal: React.FC<SessionHistoryModalProps> = ({
                     <h3 className="font-bold text-slate-100">{s.wazifahTitle}</h3>
                   </div>
 
-                  {s.stepsSummary && (
+                  {s.dhikrDetails && s.dhikrDetails.length > 0 ? (
+                    <div className="space-y-1 my-1.5 p-2 bg-slate-900/90 rounded-lg border border-slate-700/60">
+                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                        Dhikr Time Breakdown:
+                      </p>
+                      <div className="space-y-1">
+                        {s.dhikrDetails.map((detail, idx) => {
+                          const secPerCount = detail.count > 0 && detail.durationSeconds > 0
+                            ? (detail.durationSeconds / detail.count).toFixed(1)
+                            : null;
+                          return (
+                            <div key={idx} className="flex items-center justify-between text-[11px] text-slate-300 border-b border-slate-800/80 pb-1 last:border-b-0 last:pb-0">
+                              <span className="font-semibold text-slate-200">
+                                {detail.dhikrTitle} <span className="text-slate-400 font-mono">({detail.count}/{detail.targetCount})</span>
+                              </span>
+                              <span className="text-amber-300 font-mono text-[10px]">
+                                ⏱️ {formatDuration(detail.durationSeconds)}
+                                {secPerCount && ` (${secPerCount}s/cnt)`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : s.stepsSummary ? (
                     <p className="text-[11px] text-amber-300 font-medium">
                       {s.stepsSummary}
                     </p>
-                  )}
+                  ) : null}
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-400 text-[11px]">
                     <span className="flex items-center gap-1 text-emerald-400 font-semibold">

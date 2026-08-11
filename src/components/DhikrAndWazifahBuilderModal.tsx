@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Dhikr, Wazifah, DhikrCategory, WazifahCategory, WazifahStep } from '../types/wazifah';
-import { getAllDhikrs, saveCustomDhikrs, getCustomDhikrs, saveCustomWazifahs, getCustomWazifahs } from '../utils/storage';
+import { getAllDhikrs, saveCustomDhikrs, getCustomDhikrs, saveCustomWazifahs, getCustomWazifahs, deleteDhikr } from '../utils/storage';
 import { X, Plus, Trash2, ArrowUp, ArrowDown, Sparkles, Layers, BookPlus, Check } from 'lucide-react';
 
 interface DhikrAndWazifahBuilderModalProps {
@@ -374,15 +374,35 @@ export const DhikrAndWazifahBuilderModal: React.FC<DhikrAndWazifahBuilderModalPr
                 </label>
                 <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 bg-slate-950/60 rounded-xl border border-slate-800">
                   {dhikrsList.map(dhikr => (
-                    <button
+                    <div
                       key={dhikr.id}
-                      type="button"
-                      onClick={() => handleAddStepFromDhikr(dhikr)}
-                      className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-amber-300 border border-slate-700 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-medium"
+                      className="bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg flex items-center gap-1.5"
                     >
-                      <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{dhikr.title} ({dhikr.recommendedTarget})</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddStepFromDhikr(dhikr)}
+                        className="text-xs text-slate-200 hover:text-amber-300 transition-all flex items-center gap-1 font-medium"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{dhikr.title} ({dhikr.recommendedTarget})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete Dhikr "${dhikr.title}"?`)) {
+                            deleteDhikr(dhikr.id);
+                            setDhikrsList(getAllDhikrs());
+                            onDhikrOrWazifahCreated();
+                          }
+                        }}
+                        className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors ml-1"
+                        title="Delete Dhikr"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>

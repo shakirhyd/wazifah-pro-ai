@@ -4,6 +4,8 @@ import { PRESET_DHIKRS, PRESET_WAZIFAHS } from '../data/presetDhikrsAndWazifahs'
 const KEYS = {
   CUSTOM_DHIKRS: 'wazifah_custom_dhikrs_v2',
   CUSTOM_WAZIFAHS: 'wazifah_custom_wazifahs_v2',
+  DELETED_DHIKR_IDS: 'wazifah_deleted_dhikrs_v2',
+  DELETED_WAZIFAH_IDS: 'wazifah_deleted_wazifahs_v2',
   SESSIONS_LOG: 'wazifah_sessions_log_v2',
   USER_SETTINGS: 'wazifah_user_settings_v2',
   SELECTED_WAZIFAH_ID: 'wazifah_selected_id_v2',
@@ -16,12 +18,51 @@ export const DEFAULT_SETTINGS: UserSettings = {
   soundType: 'bead',
   theme: 'emerald',
   dailyTargetCount: 300,
-  autoLap: true,
+  speedUnit: 'cpm',
   tapAnywhere: false,
   showArabic: true,
   showTransliteration: true,
   showTranslation: true,
 };
+
+// --- Deleted IDs helpers ---
+export function getDeletedDhikrIds(): string[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(KEYS.DELETED_DHIKR_IDS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDeletedDhikrIds(ids: string[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(KEYS.DELETED_DHIKR_IDS, JSON.stringify(ids));
+  } catch (e) {
+    console.error('Failed to save deleted dhikrs list', e);
+  }
+}
+
+export function getDeletedWazifahIds(): string[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(KEYS.DELETED_WAZIFAH_IDS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDeletedWazifahIds(ids: string[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(KEYS.DELETED_WAZIFAH_IDS, JSON.stringify(ids));
+  } catch (e) {
+    console.error('Failed to save deleted wazifahs list', e);
+  }
+}
 
 // --- Custom Dhikrs ---
 export function getCustomDhikrs(): Dhikr[] {
@@ -45,7 +86,31 @@ export function saveCustomDhikrs(dhikrs: Dhikr[]): void {
 
 export function getAllDhikrs(): Dhikr[] {
   const custom = getCustomDhikrs();
-  return [...PRESET_DHIKRS, ...custom];
+  const deletedIds = getDeletedDhikrIds();
+  const combined = [...PRESET_DHIKRS, ...custom];
+  return combined.filter(d => !deletedIds.includes(d.id));
+}
+
+export function deleteDhikr(dhikrId: string): void {
+  // If custom, remove from custom list
+  const custom = getCustomDhikrs();
+  const filteredCustom = custom.filter(d => d.id !== dhikrId);
+  if (filteredCustom.length !== custom.length) {
+    saveCustomDhikrs(filteredCustom);
+  } else {
+    // If preset, record as deleted
+    const deleted = getDeletedDhikrIds();
+    if (!deleted.includes(dhikrId)) {
+      saveDeletedDhikrIds([...deleted, dhikrId]);
+    }
+  }
+
+  // Also remove corresponding single wazifah if deleted
+  const singleWazifahId = `single_wazifah_${dhikrId}`;
+  const deletedWazifahs = getDeletedWazifahIds();
+  if (!deletedWazifahs.includes(singleWazifahId)) {
+    saveDeletedWazifahIds([...deletedWazifahs, singleWazifahId]);
+  }
 }
 
 // --- Custom Wazifahs ---
@@ -93,8 +158,24 @@ export function getAllWazifahs(): Wazifah[] {
     ],
   }));
 
-  // Combine: Preset Multi-Dhikr Wazifahs + Custom Multi-Dhikr Wazifahs + Single-Dhikr Wazifahs
-  return [...PRESET_WAZIFAHS, ...customWazifahs, ...singleDhikrWazifahs];
+  const combined = [...PRESET_WAZIFAHS, ...customWazifahs, ...singleDhikrWazifahs];
+  const deletedIds = getDeletedWazifahIds();
+  return combined.filter(w => !deletedIds.includes(w.id));
+}
+
+export function deleteWazifah(wazifahId: string): void {
+  // If custom wazifah, filter out from custom list
+  const custom = getCustomWazifahs();
+  const filteredCustom = custom.filter(w => w.id !== wazifahId);
+  if (filteredCustom.length !== custom.length) {
+    saveCustomWazifahs(filteredCustom);
+  } else {
+    // If preset or single wazifah, record in deleted list
+    const deleted = getDeletedWazifahIds();
+    if (!deleted.includes(wazifahId)) {
+      saveDeletedWazifahIds([...deleted, wazifahId]);
+    }
+  }
 }
 
 // --- User Settings ---
