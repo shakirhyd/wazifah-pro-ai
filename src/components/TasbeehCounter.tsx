@@ -258,6 +258,12 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     onSelectStep(0);
   };
 
+  // Calculate current Dhikr speed based ONLY on current active step count and step duration
+  const currentDhikrSeconds = stepDurations[activeStepIndex] || 0;
+  const currentDhikrCount = count;
+  const countsPerMin = currentDhikrSeconds > 0 ? Math.round((currentDhikrCount / currentDhikrSeconds) * 60) : 0;
+  const secPerCount = currentDhikrCount > 0 ? (currentDhikrSeconds / currentDhikrCount).toFixed(1) : '0.0';
+
   // Format timer
   const formatTime = (secs: number) => {
     const hrs = Math.floor(secs / 3600);
@@ -271,9 +277,6 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
   // Progress percent for current step
   const progressPercent = Math.min(100, Math.round((count / stepTarget) * 100));
-  const totalCount = totalCountAcrossAllSteps || count;
-  const countsPerMin = timerSeconds > 0 ? Math.round((totalCount / timerSeconds) * 60) : 0;
-  const secPerCount = totalCount > 0 ? (timerSeconds / totalCount).toFixed(1) : '0.0';
 
   // SVG Progress Ring calculations
   const size = 260;
@@ -283,28 +286,39 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5 py-2 select-none">
-      {/* Target & Timer Header Status Bar */}
-      <div className="w-full flex items-center justify-between px-4 py-2 bg-slate-800/40 rounded-xl border border-slate-700/40 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400">Target:</span>
-          <div className="flex items-center gap-1 font-bold text-amber-300">
-            <input
-              type="number"
-              min="1"
-              max="99999"
-              value={stepTarget}
-              onChange={e => setStepTarget(Math.max(1, parseInt(e.target.value) || 33))}
-              className="w-14 bg-slate-900/80 text-amber-300 text-center rounded border border-slate-700 px-1 py-0.5 font-mono text-xs focus:outline-none focus:border-amber-400"
-            />
-          </div>
+    <div className="w-full max-w-md mx-auto flex flex-col items-center gap-4 py-2 select-none">
+      {/* Top Status Bar: Speed (Left) | Dhikr Timer (Center) | Total Timer (Right) */}
+      <div className="w-full grid grid-cols-3 items-center px-3 py-2 bg-slate-800/50 rounded-xl border border-slate-700/50 text-xs gap-1">
+        {/* Left: Speed Indicator */}
+        <button
+          onClick={toggleSpeedUnit}
+          className="flex items-center gap-1 text-slate-300 hover:text-amber-300 transition-colors cursor-pointer justify-start min-w-0"
+          title="Click to toggle between /min and s/count"
+        >
+          <span className="text-slate-400 font-medium truncate">Speed:</span>
+          {speedUnit === 'sec_per_count' ? (
+            <span className="font-bold text-amber-300 font-mono whitespace-nowrap">{secPerCount}s</span>
+          ) : (
+            <span className="font-bold text-amber-300 font-mono whitespace-nowrap">{countsPerMin}/m</span>
+          )}
+          <span className="text-[9px] bg-slate-900 border border-slate-700 text-slate-400 px-1 py-0.2 rounded font-mono shrink-0">
+            ⇄
+          </span>
+        </button>
+
+        {/* Center: Dhikr Timing */}
+        <div className="flex items-center justify-center gap-1 text-amber-300 font-mono font-semibold">
+          <span className="text-[10px] text-slate-400 font-sans uppercase">Dhikr:</span>
+          <span>{formatTime(currentDhikrSeconds)}</span>
         </div>
 
-        <div className="flex items-center gap-1 text-slate-300 font-mono">
-          <span>{formatTime(timerSeconds)}</span>
+        {/* Right: Total Timer */}
+        <div className="flex items-center justify-end gap-1 text-slate-300 font-mono">
+          <span className="text-[10px] text-slate-400 font-sans uppercase">Total:</span>
+          <span className="font-semibold">{formatTime(timerSeconds)}</span>
           <button
             onClick={() => setIsRunning(!isRunning)}
-            className="p-1 hover:text-amber-300 transition-colors"
+            className="p-1 hover:text-amber-300 transition-colors cursor-pointer shrink-0"
             title={isRunning ? 'Pause Timer' : 'Start Timer'}
           >
             {isRunning ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
@@ -360,84 +374,51 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
             {count}
           </span>
 
-          <span className="text-sm font-semibold text-slate-400 mt-1 truncate max-w-[170px]">
-            of {stepTarget} ({currentStep.dhikrTitle})
-          </span>
-
-          <span className="text-[10px] font-medium text-amber-300/80 mt-2 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
-            TAP TO COUNT
-          </span>
+          <div className="flex items-center gap-1 text-sm font-semibold text-slate-400 mt-1">
+            <span>of</span>
+            <input
+              type="number"
+              min="1"
+              max="99999"
+              value={stepTarget}
+              onClick={e => e.stopPropagation()}
+              onChange={e => setStepTarget(Math.max(1, parseInt(e.target.value) || 33))}
+              className="w-14 bg-slate-950/80 text-amber-300 text-center rounded border border-slate-700 px-1 py-0.5 font-mono text-xs focus:outline-none focus:border-amber-400"
+              title="Click to edit target count"
+            />
+          </div>
         </button>
       </div>
 
-      {/* Speed & Total Session Counts bar */}
-      <div className="flex items-center justify-around w-full px-4 text-xs text-slate-400 bg-slate-800/30 py-2 rounded-xl border border-slate-700/30">
-        <button
-          onClick={toggleSpeedUnit}
-          className="flex items-center gap-1 hover:text-amber-300 transition-colors cursor-pointer group"
-          title="Click to toggle between count/min and sec/count"
-        >
-          <span className="text-slate-500">Speed: </span>
-          {speedUnit === 'sec_per_count' ? (
-            <>
-              <span className="font-semibold text-slate-200">{secPerCount}</span>
-              <span className="text-[10px] text-amber-400 font-medium"> s/count</span>
-            </>
-          ) : (
-            <>
-              <span className="font-semibold text-slate-200">{countsPerMin}</span>
-              <span className="text-[10px] text-amber-400 font-medium"> /min</span>
-            </>
-          )}
-          <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-400 group-hover:text-amber-300 px-1 py-0.2 rounded ml-1 font-mono">
-            ⇄ Toggle
-          </span>
-        </button>
-        <div className="h-3 w-px bg-slate-700" />
-        <div>
-          <span className="text-slate-500">Total Session: </span>
-          <span className="font-semibold text-amber-300">{totalCountAcrossAllSteps || count}</span>
-        </div>
-      </div>
-
-      {/* Secondary Controls Bar */}
-      <div className="w-full grid grid-cols-4 gap-2">
+      {/* Control Buttons Bar: Undo, Reset, Save Log */}
+      <div className="w-full grid grid-cols-3 gap-2.5 pt-1">
         <button
           onClick={handleUndo}
           disabled={count === 0}
-          className="flex flex-col items-center justify-center py-2.5 px-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors"
+          className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors cursor-pointer"
           title="Undo 1 count"
         >
-          <Undo2 className="w-4 h-4 text-amber-400 mb-0.5" />
+          <Undo2 className="w-4 h-4 text-amber-400" />
           <span>-1 Undo</span>
-        </button>
-
-        <button
-          onClick={() => handleIncrement(10)}
-          className="flex flex-col items-center justify-center py-2.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors"
-          title="Add +10 counts"
-        >
-          <Plus className="w-4 h-4 text-emerald-400 mb-0.5" />
-          <span>+10 Quick</span>
         </button>
 
         <button
           onClick={handleReset}
           disabled={count === 0 && timerSeconds === 0}
-          className="flex flex-col items-center justify-center py-2.5 px-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors"
+          className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors cursor-pointer"
           title="Reset counter"
         >
-          <RotateCcw className="w-4 h-4 text-rose-400 mb-0.5" />
+          <RotateCcw className="w-4 h-4 text-rose-400" />
           <span>Reset</span>
         </button>
 
         <button
           onClick={handleCompleteAndSave}
           disabled={count === 0 && totalCountAcrossAllSteps === 0}
-          className="flex flex-col items-center justify-center py-2.5 px-2 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 disabled:opacity-40 text-white rounded-xl border border-emerald-500/40 text-xs font-bold transition-all shadow-md"
+          className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 disabled:opacity-40 text-white rounded-xl border border-emerald-500/40 text-xs font-bold transition-all shadow-md cursor-pointer"
           title="Save session to history log"
         >
-          <CheckCircle2 className="w-4 h-4 text-amber-300 mb-0.5" />
+          <CheckCircle2 className="w-4 h-4 text-amber-300" />
           <span>Save Log</span>
         </button>
       </div>
