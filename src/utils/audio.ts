@@ -108,11 +108,20 @@ export function playCompletionChime(volume: number = 0.6) {
   }
 }
 
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+
 export function triggerVibration(vibrationEnabled: boolean, pattern: number | number[] = 25) {
-  if (!vibrationEnabled || typeof navigator === 'undefined' || !navigator.vibrate) return;
-  try {
-    navigator.vibrate(pattern);
-  } catch {
-    // Vibration API optional
-  }
+  if (!vibrationEnabled) return;
+
+  // Try Capacitor Haptics first
+  Haptics.impact({ style: ImpactStyle.Light }).catch(() => {
+    // Fallback to standard web Vibration API
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(pattern);
+      } catch {
+        // Optional feature
+      }
+    }
+  });
 }

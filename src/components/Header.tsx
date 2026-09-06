@@ -1,6 +1,7 @@
 import React from 'react';
-import { Flame, History, BarChart3, Settings, BookOpen, Volume2, VolumeX, Plus } from 'lucide-react';
+import { Flame, Settings, BookOpen, Volume2, VolumeX, Plus, User, RefreshCw } from 'lucide-react';
 import { UserSettings } from '../types/wazifah';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   currentStreak: number;
@@ -8,9 +9,10 @@ interface HeaderProps {
   onUpdateSettings: (newSettings: UserSettings) => void;
   onOpenSelector: () => void;
   onOpenBuilder: () => void;
-  onOpenHistory: () => void;
-  onOpenAnalytics: () => void;
+  onOpenHistory?: () => void;
+  onOpenAnalytics?: () => void;
   onOpenSettings: () => void;
+  onOpenAuth: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,10 +21,11 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateSettings,
   onOpenSelector,
   onOpenBuilder,
-  onOpenHistory,
-  onOpenAnalytics,
   onOpenSettings,
+  onOpenAuth,
 }) => {
+  const { currentUser, syncState } = useAuth();
+
   const toggleSound = () => {
     onUpdateSettings({ ...settings, soundEnabled: !settings.soundEnabled });
   };
@@ -36,13 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
             📿
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-slate-100 flex items-center gap-1.5 font-sans">
-              <span>Wazifah Tracker</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">
-                PRO
-              </span>
+            <h1 className="text-lg font-bold tracking-tight text-slate-100 font-sans">
+              Wazifah Tracker
             </h1>
-            <p className="text-xs text-slate-400 hidden sm:block">Combine Dhikrs & Track Wazifahs</p>
           </div>
         </div>
 
@@ -85,24 +84,6 @@ export const Header: React.FC<HeaderProps> = ({
             <BookOpen className="w-4 h-4" />
           </button>
 
-          {/* History Button */}
-          <button
-            onClick={onOpenHistory}
-            title="Session Log"
-            className="p-2 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-slate-800 transition-colors"
-          >
-            <History className="w-4 h-4" />
-          </button>
-
-          {/* Analytics Button */}
-          <button
-            onClick={onOpenAnalytics}
-            title="Reports & Analytics"
-            className="p-2 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-slate-800 transition-colors"
-          >
-            <BarChart3 className="w-4 h-4" />
-          </button>
-
           {/* Settings Button */}
           <button
             onClick={onOpenSettings}
@@ -110,6 +91,48 @@ export const Header: React.FC<HeaderProps> = ({
             className="p-2 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-slate-800 transition-colors"
           >
             <Settings className="w-4 h-4" />
+          </button>
+
+          {/* Account / Cloud Sync Avatar Button */}
+          <button
+            onClick={onOpenAuth}
+            aria-label={
+              currentUser
+                ? `Account: ${currentUser.displayName || currentUser.email} (Cloud Synced)`
+                : 'Account & Cloud Sync (Click to Sign In)'
+            }
+            title={
+              currentUser
+                ? `Account: ${currentUser.displayName || currentUser.email} (Cloud Synced)`
+                : 'Account & Cloud Backup (Sign In)'
+            }
+            className={`w-8 h-8 rounded-full flex items-center justify-center relative transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 ${
+              currentUser
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-bold text-xs border border-emerald-400/50 hover:brightness-110 shadow-sm'
+                : 'bg-slate-800/90 text-amber-300 border border-amber-500/40 hover:border-amber-400 hover:bg-amber-500/15 shadow-sm shadow-amber-950/20'
+            }`}
+          >
+            {currentUser ? (
+              <>
+                <span>
+                  {(currentUser.displayName?.[0] || currentUser.email?.[0] || 'U').toUpperCase()}
+                </span>
+                {syncState === 'syncing' ? (
+                  <RefreshCw className="w-2.5 h-2.5 text-amber-300 animate-spin absolute -bottom-0.5 -right-0.5 bg-slate-900 rounded-full" />
+                ) : (
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-900 flex items-center justify-center"
+                    title="Cloud Synced"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <User className="w-4 h-4 text-amber-300" />
+                {/* Conspicuous amber indicator dot showing account option is available */}
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-slate-900" />
+              </>
+            )}
           </button>
         </div>
       </div>

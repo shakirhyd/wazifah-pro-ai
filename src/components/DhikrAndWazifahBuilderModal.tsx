@@ -394,7 +394,6 @@ export const DhikrAndWazifahBuilderModal: React.FC<DhikrAndWazifahBuilderModalPr
                           if (window.confirm(`Delete Dhikr "${dhikr.title}"?`)) {
                             deleteDhikr(dhikr.id);
                             setDhikrsList(getAllDhikrs());
-                            onDhikrOrWazifahCreated();
                           }
                         }}
                         className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors ml-1"

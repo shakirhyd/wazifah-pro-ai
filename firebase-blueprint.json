@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID matching auth.uid" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "createdAt": { "type": "string", "description": "ISO timestamp account created" }
+      },
+      "required": ["id", "email"]
+    },
+    "CustomWazifah": {
+      "title": "CustomWazifah",
+      "description": "A custom user-defined Wazifah routine",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique Wazifah ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "title": { "type": "string", "description": "Title of the Wazifah" },
+        "description": { "type": "string", "description": "Description of the routine" },
+        "category": { "type": "string", "description": "Category name" },
+        "steps": { "type": "array", "description": "Ordered steps for the routine" },
+        "isCustom": { "type": "boolean", "description": "Indicates custom routine" },
+        "createdAt": { "type": "string", "description": "ISO timestamp created" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp updated" }
+      },
+      "required": ["id", "userId", "title", "steps"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "Completed Wazifah or Tasbeeh practice session metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique session ID" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "wazifahId": { "type": "string", "description": "ID of practiced Wazifah" },
+        "wazifahTitle": { "type": "string", "description": "Title of Wazifah" },
+        "stepsSummary": { "type": "string", "description": "Summary of steps" },
+        "count": { "type": "number", "description": "Total count recorded" },
+        "targetCount": { "type": "number", "description": "Total target count" },
+        "durationSeconds": { "type": "number", "description": "Total duration in seconds" },
+        "startedAt": { "type": "string", "description": "ISO timestamp session started" },
+        "completedAt": { "type": "string", "description": "ISO timestamp session completed" },
+        "speedCountPerMin": { "type": "number", "description": "Pace in counts/minute" },
+        "dhikrDetails": { "type": "array", "description": "Per-dhikr breakdown" }
+      },
+      "required": ["id", "userId", "wazifahId", "wazifahTitle", "count", "durationSeconds", "completedAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User preferences and audio/haptic settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "soundEnabled": { "type": "boolean", "description": "Audio sound enabled" },
+        "vibrationEnabled": { "type": "boolean", "description": "Vibration enabled" },
+        "soundVolume": { "type": "number", "description": "Volume level" },
+        "soundType": { "type": "string", "description": "Sound bead/click/bell" },
+        "theme": { "type": "string", "description": "Theme choice" },
+        "dailyTargetCount": { "type": "number", "description": "Daily recitation target" },
+        "speedUnit": { "type": "string", "description": "Speed display unit" },
+        "tapAnywhere": { "type": "boolean", "description": "Tap anywhere setting" },
+        "showArabic": { "type": "boolean", "description": "Display Arabic" },
+        "showTransliteration": { "type": "boolean", "description": "Display transliteration" },
+        "showTranslation": { "type": "boolean", "description": "Display translation" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile document"
+    },
+    "/users/{userId}/customWazifahs/{wazifahId}": {
+      "schema": { "$ref": "#/entities/CustomWazifah" },
+      "description": "User custom Wazifahs collection"
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "User completed sessions and metrics log"
+    },
+    "/users/{userId}/settings/{settingsId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "User saved application settings and preferences"
+    }
+  }
+}

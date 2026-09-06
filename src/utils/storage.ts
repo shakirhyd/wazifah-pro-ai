@@ -1,5 +1,14 @@
 import { Dhikr, Wazifah, WazifahSession, UserSettings, DailySummary } from '../types/wazifah';
 import { PRESET_DHIKRS, PRESET_WAZIFAHS } from '../data/presetDhikrsAndWazifahs';
+import {
+  auth,
+  saveUserCustomWazifahCloud,
+  deleteUserCustomWazifahCloud,
+  saveUserSessionCloud,
+  deleteUserSessionCloud,
+  clearAllUserSessionsCloud,
+  saveUserSettingsCloud,
+} from '../lib/firebase';
 
 const KEYS = {
   CUSTOM_DHIKRS: 'wazifah_custom_dhikrs_v2',
@@ -128,6 +137,12 @@ export function saveCustomWazifahs(wazifahs: Wazifah[]): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(KEYS.CUSTOM_WAZIFAHS, JSON.stringify(wazifahs));
+    if (auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      wazifahs.forEach(w => {
+        saveUserCustomWazifahCloud(uid, w);
+      });
+    }
   } catch (e) {
     console.error('Failed to save custom wazifahs', e);
   }
@@ -169,6 +184,9 @@ export function deleteWazifah(wazifahId: string): void {
   const filteredCustom = custom.filter(w => w.id !== wazifahId);
   if (filteredCustom.length !== custom.length) {
     saveCustomWazifahs(filteredCustom);
+    if (auth.currentUser) {
+      deleteUserCustomWazifahCloud(auth.currentUser.uid, wazifahId);
+    }
   } else {
     // If preset or single wazifah, record in deleted list
     const deleted = getDeletedWazifahIds();
@@ -193,6 +211,9 @@ export function saveUserSettings(settings: UserSettings): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(KEYS.USER_SETTINGS, JSON.stringify(settings));
+    if (auth.currentUser) {
+      saveUserSettingsCloud(auth.currentUser.uid, settings);
+    }
   } catch (e) {
     console.error('Failed to save user settings', e);
   }
@@ -234,6 +255,9 @@ export function saveSessionLog(session: WazifahSession): void {
     const current = getSessionsLog();
     const updated = [session, ...current];
     localStorage.setItem(KEYS.SESSIONS_LOG, JSON.stringify(updated));
+    if (auth.currentUser) {
+      saveUserSessionCloud(auth.currentUser.uid, session);
+    }
   } catch (e) {
     console.error('Failed to save session log', e);
   }
@@ -245,6 +269,9 @@ export function deleteSessionLog(sessionId: string): void {
     const current = getSessionsLog();
     const updated = current.filter(s => s.id !== sessionId);
     localStorage.setItem(KEYS.SESSIONS_LOG, JSON.stringify(updated));
+    if (auth.currentUser) {
+      deleteUserSessionCloud(auth.currentUser.uid, sessionId);
+    }
   } catch (e) {
     console.error('Failed to delete session log', e);
   }
@@ -254,6 +281,9 @@ export function clearAllSessionsLog(): void {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.removeItem(KEYS.SESSIONS_LOG);
+    if (auth.currentUser) {
+      clearAllUserSessionsCloud(auth.currentUser.uid);
+    }
   } catch (e) {
     console.error('Failed to clear sessions log', e);
   }

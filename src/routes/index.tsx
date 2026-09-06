@@ -8,6 +8,8 @@ import { DhikrAndWazifahBuilderModal } from '../components/DhikrAndWazifahBuilde
 import { SessionHistoryModal } from '../components/SessionHistoryModal';
 import { AnalyticsModal } from '../components/AnalyticsModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { AuthModal } from '../components/AuthModal';
+import { useAuth } from '../context/AuthContext';
 import { Wazifah, WazifahSession, UserSettings } from '../types/wazifah';
 import {
   getAllWazifahs,
@@ -41,6 +43,9 @@ function HomeComponent() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const { currentUser, syncState } = useAuth();
 
   // Load data on mount / update
   const reloadData = useCallback(() => {
@@ -58,7 +63,7 @@ function HomeComponent() {
 
   useEffect(() => {
     reloadData();
-  }, [reloadData]);
+  }, [reloadData, currentUser, syncState]);
 
   // Handle selecting a Wazifah
   const handleSelectWazifah = (wazifah: Wazifah) => {
@@ -120,6 +125,7 @@ function HomeComponent() {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Body */}
@@ -148,7 +154,7 @@ function HomeComponent() {
 
         {/* Footer info */}
         <footer className="text-center text-[11px] text-slate-500 py-2 border-t border-slate-800/60">
-          Wazifah Tracker PRO • Combine Dhikrs & Track Timed Routines
+          Wazifah Tracker • Islamic Dhikr & Routine Counter
         </footer>
       </main>
 
@@ -193,6 +199,17 @@ function HomeComponent() {
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onDataReload={reloadData}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+      />
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => {
+          setIsAuthOpen(false);
+          reloadData();
+        }}
       />
     </div>
   );

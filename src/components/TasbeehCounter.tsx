@@ -373,20 +373,6 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
           <span className="text-5xl font-black text-slate-100 font-mono tracking-tight group-active:scale-110 transition-transform">
             {count}
           </span>
-
-          <div className="flex items-center gap-1 text-sm font-semibold text-slate-400 mt-1">
-            <span>of</span>
-            <input
-              type="number"
-              min="1"
-              max="99999"
-              value={stepTarget}
-              onClick={e => e.stopPropagation()}
-              onChange={e => setStepTarget(Math.max(1, parseInt(e.target.value) || 33))}
-              className="w-14 bg-slate-950/80 text-amber-300 text-center rounded border border-slate-700 px-1 py-0.5 font-mono text-xs focus:outline-none focus:border-amber-400"
-              title="Click to edit target count"
-            />
-          </div>
         </button>
       </div>
 
