@@ -1,12 +1,9 @@
 {
-  "projectId": "sunny-carrier-hmbw7",
-  "appId": "1:130661349169:web:925d31937eb90366216210",
-  "apiKey": "AIzaSyB3PFNmD1R7VfQUKrbJ2KrRzWN05GA0QCk",
-  "authDomain": "sunny-carrier-hmbw7.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-wazifahtrackerpr-28a8778f-c15a-4858-b564-8e66f1035b25",
-  "storageBucket": "sunny-carrier-hmbw7.firebasestorage.app",
-  "messagingSenderId": "130661349169",
-  "measurementId": "",
-  "oAuthClientId": "130661349169-q3f5h89rj899221cthihgtq84r4p1514.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "wazifah-pro-ai",
+  "appId": "1:338994065159:web:68dece02bbe14275581fa2",
+  "apiKey": "AIzaSyDIbHwvm8qcdk8pgmxJbYuWcwfqqNgS-iY",
+  "authDomain": "wazifah-pro-ai.firebaseapp.com",
+  "storageBucket": "wazifah-pro-ai.firebasestorage.app",
+  "messagingSenderId": "338994065159",
+  "measurementId": "G-5HRHV0672Y"
 }
