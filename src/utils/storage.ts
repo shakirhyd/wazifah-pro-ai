@@ -289,17 +289,41 @@ export function clearAllSessionsLog(): void {
   }
 }
 
+// --- Local Calendar Date Helper ---
+export function getLocalDateString(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  if (isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // --- Analytics & Summaries ---
-export function getDailySummaries(days: number = 30): DailySummary[] {
-  const sessions = getSessionsLog();
+export function getDailySummaries(days: number = 30, wazifahId?: string, wazifahTitle?: string): DailySummary[] {
+  let sessions = getSessionsLog();
+  if (wazifahId || wazifahTitle) {
+    const normTitle = (wazifahTitle || '').toLowerCase().trim();
+    sessions = sessions.filter(s => {
+      if (wazifahId && s.wazifahId === wazifahId) return true;
+      if (normTitle && s.wazifahTitle) {
+        const sTitle = s.wazifahTitle.toLowerCase().trim();
+        if (sTitle === normTitle || sTitle.includes(normTitle) || normTitle.includes(sTitle)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
   const map: Record<string, DailySummary> = {};
 
-  // Initialize last `days` days with 0
+  // Initialize last `days` days with 0 using local dates
   const now = new Date();
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(d);
     map[dateStr] = {
       date: dateStr,
       totalCount: 0,
@@ -309,7 +333,7 @@ export function getDailySummaries(days: number = 30): DailySummary[] {
   }
 
   sessions.forEach(s => {
-    const dateStr = s.completedAt.split('T')[0];
+    const dateStr = getLocalDateString(s.completedAt);
     if (map[dateStr]) {
       map[dateStr].totalCount += s.count;
       map[dateStr].totalDurationSeconds += s.durationSeconds;
@@ -320,31 +344,50 @@ export function getDailySummaries(days: number = 30): DailySummary[] {
   return Object.values(map);
 }
 
-export function getCurrentStreak(): { currentStreak: number; longestStreak: number } {
-  const sessions = getSessionsLog();
+export function getCurrentStreak(wazifahId?: string, wazifahTitle?: string): { currentStreak: number; longestStreak: number } {
+  let sessions = getSessionsLog();
+  if (wazifahId || wazifahTitle) {
+    const normTitle = (wazifahTitle || '').toLowerCase().trim();
+    sessions = sessions.filter(s => {
+      if (wazifahId && s.wazifahId === wazifahId) return true;
+      if (normTitle && s.wazifahTitle) {
+        const sTitle = s.wazifahTitle.toLowerCase().trim();
+        if (sTitle === normTitle || sTitle.includes(normTitle) || normTitle.includes(sTitle)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
   if (sessions.length === 0) return { currentStreak: 0, longestStreak: 0 };
 
-  const uniqueDates = Array.from(new Set(sessions.map(s => s.completedAt.split('T')[0]))).sort().reverse();
+  // Calculate unique active calendar dates in device's local time
+  const uniqueDates = Array.from(
+    new Set(sessions.map(s => getLocalDateString(s.completedAt)).filter(Boolean))
+  ).sort().reverse();
+
   if (uniqueDates.length === 0) return { currentStreak: 0, longestStreak: 0 };
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const yesterday = new Date();
+  const now = new Date();
+  const todayStr = getLocalDateString(now);
+  const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = getLocalDateString(yesterday);
 
   let currentStreak = 0;
-  let checkDate = new Date();
+  let checkDate = new Date(now);
 
-  // If active today or yesterday, count backwards
+  // If active today or yesterday, count backwards consecutive days
   const hasToday = uniqueDates.includes(todayStr);
   const hasYesterday = uniqueDates.includes(yesterdayStr);
 
   if (!hasToday && !hasYesterday) {
     currentStreak = 0;
   } else {
-    checkDate = hasToday ? new Date() : yesterday;
+    checkDate = hasToday ? new Date(now) : yesterday;
     while (true) {
-      const dateStr = checkDate.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(checkDate);
       if (uniqueDates.includes(dateStr)) {
         currentStreak++;
         checkDate.setDate(checkDate.getDate() - 1);
@@ -361,7 +404,8 @@ export function getCurrentStreak(): { currentStreak: number; longestStreak: numb
 
   const sortedAsc = [...uniqueDates].sort();
   for (const dStr of sortedAsc) {
-    const currDate = new Date(dStr);
+    const [y, m, d] = dStr.split('-').map(Number);
+    const currDate = new Date(y, m - 1, d);
     if (!prevDate) {
       tempStreak = 1;
     } else {

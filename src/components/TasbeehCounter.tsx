@@ -27,6 +27,9 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
     targetCount: 33,
   };
 
+  const [stepCountsCompleted, setStepCountsCompleted] = useState<Record<number, number>>({});
+  const [stepDurations, setStepDurations] = useState<Record<number, number>>({});
+
   const [count, setCount] = useState(0);
   const [stepTarget, setStepTarget] = useState(currentStep.targetCount || 33);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -35,29 +38,32 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   const [showFullWazifahCompletionModal, setShowFullWazifahCompletionModal] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
-  // Completed counts history and duration per step in current session
-  const [stepCountsCompleted, setStepCountsCompleted] = useState<Record<number, number>>({});
-  const [stepDurations, setStepDurations] = useState<Record<number, number>>({});
-
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevWazifahIdRef = useRef(wazifah.id);
 
   // Sync state when active step or wazifah changes
   useEffect(() => {
-    setCount(0);
+    if (prevWazifahIdRef.current !== wazifah.id) {
+      // User switched to a different Wazifah: reset entire session
+      prevWazifahIdRef.current = wazifah.id;
+      setCount(0);
+      setStepTarget(currentStep.targetCount || 33);
+      setTimerSeconds(0);
+      setIsRunning(false);
+      setShowStepCompletionModal(false);
+      setShowFullWazifahCompletionModal(false);
+      setSessionStartTime(null);
+      setStepCountsCompleted({});
+      setStepDurations({});
+      return;
+    }
+
+    // User navigated to another step within the SAME Wazifah:
+    // Retain and display the existing count for this step (or 0 if not started yet)
+    const retained = stepCountsCompleted[activeStepIndex] || 0;
+    setCount(retained);
     setStepTarget(currentStep.targetCount || 33);
   }, [wazifah.id, activeStepIndex, currentStep.targetCount]);
-
-  // Reset entire counter when switching wazifahs
-  useEffect(() => {
-    setCount(0);
-    setTimerSeconds(0);
-    setIsRunning(false);
-    setShowStepCompletionModal(false);
-    setShowFullWazifahCompletionModal(false);
-    setSessionStartTime(null);
-    setStepCountsCompleted({});
-    setStepDurations({});
-  }, [wazifah.id]);
 
   // Timer ticker - increments overall timer & per-step duration
   useEffect(() => {
@@ -170,7 +176,8 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
   // Handle Reset
   const handleReset = () => {
-    if (count > 0 && !window.confirm('Reset current count and session timer?')) return;
+    const totalDone = Object.values(stepCountsCompleted).reduce((a, b) => a + b, 0);
+    if ((count > 0 || totalDone > 0) && !window.confirm('Reset current count and session timer?')) return;
     setCount(0);
     setTimerSeconds(0);
     setIsRunning(false);
@@ -185,6 +192,8 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   // Handle Repeat Routine
   const handleRepeatRoutine = () => {
     setCount(0);
+    setStepCountsCompleted({});
+    setStepDurations({});
     setShowStepCompletionModal(false);
     setShowFullWazifahCompletionModal(false);
     onSelectStep(0);
@@ -390,7 +399,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
 
         <button
           onClick={handleReset}
-          disabled={count === 0 && timerSeconds === 0}
+          disabled={count === 0 && totalCountAcrossAllSteps === 0 && timerSeconds === 0}
           className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl border border-slate-700 text-xs font-semibold transition-colors cursor-pointer"
           title="Reset counter"
         >

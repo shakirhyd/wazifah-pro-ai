@@ -110,14 +110,15 @@ function HomeComponent() {
     saveUserSettings(newSettings);
   };
 
-  const streakInfo = getCurrentStreak();
-  const dailySummaries = getDailySummaries(30);
+  const streakInfo = getCurrentStreak(selectedWazifah?.id, selectedWazifah?.title);
+  const dailySummaries = getDailySummaries(30, selectedWazifah?.id, selectedWazifah?.title);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
       {/* Header */}
       <Header
         currentStreak={streakInfo.currentStreak}
+        wazifahTitle={selectedWazifah?.title}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
         onOpenSelector={() => setIsSelectorOpen(true)}

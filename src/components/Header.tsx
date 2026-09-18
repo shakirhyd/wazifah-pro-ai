@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   currentStreak: number;
+  wazifahTitle?: string;
   settings: UserSettings;
   onUpdateSettings: (newSettings: UserSettings) => void;
   onOpenSelector: () => void;
@@ -17,6 +18,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   currentStreak,
+  wazifahTitle,
   settings,
   onUpdateSettings,
   onOpenSelector,
@@ -49,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Streak Badge */}
           <div
-            title="Active Daily Streak"
+            title={wazifahTitle ? `Daily Streak for ${wazifahTitle}: ${currentStreak} days` : `Daily Streak: ${currentStreak} days`}
             className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 px-2 py-1 rounded-full text-xs font-semibold"
           >
             <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20 animate-pulse" />
